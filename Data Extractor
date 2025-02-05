@@ -146,43 +146,45 @@ article_dic['title'] = []
 article_dic['time'] = []
 article_dic['sum_body'] = []
 article_dic['stocks'] = []
-counter = 0
+
+today_str = datetime.now().strftime("%a, %b %d, %Y")
+
 for url in article_urls:
-    if url['href'] == 'https://finance.yahoo.com/news/':
-        continue
-    if counter == 3:
-        break
     link = url['href']
-    article_dic['link'].append(url['href'])
+    if link == 'https://finance.yahoo.com/news/':
+        continue
+
+    
     second_response = requests.get(link)
     second_soup = BeautifulSoup(second_response.content, 'html.parser')
 
-    article_dic['author'].append(find_author(second_soup))
-    article_dic['title'].append(find_title(second_soup))
-    article_dic['time'].append(find_time(second_soup))    
-    body, sum_body = find_body(second_soup)
-    article_dic['sum_body'].append(sum_body)
-    stock_info = find_stocks(second_soup)
-    
-    if stock_info:
-        stocks = list(stock_info.keys())
-        total_stocks = [stock.replace('%5E', '') for stock in stocks]
-        result = ', '.join(total_stocks)
-        article_dic['stocks'].append(result)
-    else:
-        article_dic['stocks'].append(None)
-    if stock_info and body:
-        for stock in stock_info.keys():
-            if stock_info[stock]['name']:
-                if contains_integer(stock_info[stock]['name']):
-                   stock_name = stock_info[stock]['name']
-                else: 
-                    stock_name = stock_info[stock]['name'].split(' ')[0]
-                stock_info[stock]['sentence'] = stock_sentences = extract_sentences(body, stock_name)
-        all_stocks.update(stock_info)
-    
-    counter += 1
-    
+    article_time = find_time(second_soup)
+    if article_time and today_str in article_time:
+
+        article_dic['link'].append(url['href'])
+        article_dic['author'].append(find_author(second_soup))
+        article_dic['title'].append(find_title(second_soup))
+        article_dic['time'].append(find_time(second_soup))    
+        body, sum_body = find_body(second_soup)
+        article_dic['sum_body'].append(sum_body)
+        stock_info = find_stocks(second_soup)
+        
+        if stock_info:
+            stocks = list(stock_info.keys())
+            total_stocks = [stock.replace('%5E', '') for stock in stocks]
+            result = ', '.join(total_stocks)
+            article_dic['stocks'].append(result)
+        else:
+            article_dic['stocks'].append(None)
+        if stock_info and body:
+            for stock in stock_info.keys():
+                if stock_info[stock]['name']:
+                    if contains_integer(stock_info[stock]['name']):
+                       stock_name = stock_info[stock]['name']
+                    else: 
+                        stock_name = stock_info[stock]['name'].split(' ')[0]
+                    stock_info[stock]['sentence'] = stock_sentences = extract_sentences(body, stock_name)
+            all_stocks.update(stock_info)    
 
 stock_df = pd.DataFrame(all_stocks)
 stock_df.replace('--', np.nan, inplace=True)
